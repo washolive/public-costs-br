@@ -171,13 +171,14 @@ st.markdown("""Visualização e obtenção de insights sobre os custos
 with st.sidebar:
     st.subheader("Filtros")
     year_sel = st.selectbox("Ano", [2020, 2021, 2022], index=2)
-    if year_sel:
+    load = st.checkbox("Carregar os dados")
+    if load:
         df_full = load_data(year_sel)
         st.session_state.data_loaded = True
-    if st.session_state.data_loaded:
         df_filtered, filters = all_filters(df_full)
 
-create_dashboard(df_filtered, filters)
-insights = st.button("Insights do ChatGPT")
-if insights:
-    get_insights(df_filtered, filters, NUMBER_OF_INSIGHTS)
+if load and st.session_state.data_loaded:
+    create_dashboard(df_filtered, filters)
+    insights = st.button("Insights do ChatGPT")
+    if insights:
+        get_insights(df_filtered, filters, NUMBER_OF_INSIGHTS)
