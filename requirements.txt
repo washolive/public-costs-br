@@ -1,3 +1,4 @@
 pandas
 streamlit>=1.21
+plotly>=5.13
 openai>=0.27

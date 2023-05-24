@@ -12,6 +12,7 @@ from zipfile import ZipFile
 from io import BytesIO
 import pandas as pd
 import streamlit as st
+import plotly.express as px
 import openai
 
 
@@ -77,30 +78,36 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
     """Gera o painel com indicadores e gráficos"""
 
     ind1, ind2 = st.columns(2)
-    valor = locale.currency(df["valor"].min(), grouping=True)
-    ind1.metric(label="Mínimo", value=valor)
     valor = locale.currency(df["valor"].max(), grouping=True)
-    ind2.metric(label="Máximo", value=valor)
-
-    ind3, ind4 = st.columns(2)
-    valor = locale.currency(df["valor"].mean(), grouping=True)
-    ind3.metric(label="Média", value=valor)
+    ind1.metric(label="Máximo", value=valor)
     valor = locale.currency(df["valor"].sum(), grouping=True)
-    ind4.metric(label="Soma", value=valor)
+    ind2.metric(label="Soma", value=valor)
 
-    st.subheader("Evolução mensal")
-    df_group = df.groupby(["ano_mes"],
-                          as_index=False)["valor"].agg({"total": "sum"})
-    st.bar_chart(data=df_group, x="ano_mes", y="total")
+    tab1, tab2, tab3 = st.tabs(["Evolução mensal",
+                          "Maiores despesas",
+                          "Dados detalhados"])
+    with tab1:
+        df_group = df.groupby(["ano_mes", "item_despesa"],
+                            as_index=False)["valor"].agg({"total": "sum"})
+        fig = px.bar(df_group, x="ano_mes", y="total", color="item_despesa")
+        fig.update_xaxes(type='category')
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Dados detalhados")
-    df_grid = df.copy()
-    # Remove colunas preenchidas nas filtragens
-    for col in filtered:
-        df_grid = df_grid.drop(col, axis=1)
-    st.dataframe(df_grid
-                 .sort_values(by=list(df_grid.columns))
-                 .set_index("ano_mes"))
+    with tab2:
+        df_group = df.groupby(["item_despesa", "natureza_despesa"],
+                            as_index=False)["valor"].agg({"total": "sum"})
+        fig = px.treemap(df_group, path=[px.Constant("Total"), "item_despesa",
+                                         "natureza_despesa"], values="total")
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab3:
+        df_grid = df.copy()
+        # Remove colunas preenchidas nas filtragens
+        for col in filtered:
+            df_grid = df_grid.drop(col, axis=1)
+        st.dataframe(df_grid
+                    .sort_values(by=list(df_grid.columns))
+                    .set_index("ano_mes"))
 
 
 def get_insights(df: pd.DataFrame, filtered: dict, qti: int):
