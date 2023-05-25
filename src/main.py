@@ -96,6 +96,8 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
     with tab2:
         df_group = df.groupby(["item_despesa", "natureza_despesa"],
                             as_index=False)["valor"].agg({"total": "sum"})
+        # Trata valores negativos que impedem a geração do treemap
+        df_group.loc[df_group.total < 0, "total"] = 0
         fig = px.treemap(df_group, path=[px.Constant("Total"), "item_despesa",
                                          "natureza_despesa"], values="total")
         st.plotly_chart(fig, use_container_width=True)
