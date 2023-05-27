@@ -83,7 +83,8 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
     valor = locale.currency(df["valor"].sum(), grouping=True)
     ind2.metric(label="Soma", value=valor)
 
-    tab1, tab2, tab3 = st.tabs(["Evolução mensal",
+    tab1, tab2, tab3, tab4 = st.tabs(["Evolução despesas",
+                          "Evolução órgãos",
                           "Maiores despesas",
                           "Dados detalhados"])
     with tab1:
@@ -94,6 +95,13 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
         st.plotly_chart(fig, use_container_width=True)
 
     with tab2:
+        df_group = df.groupby(["ano_mes", "orgao_nome"],
+                            as_index=False)["valor"].agg({"total": "sum"})
+        fig = px.bar(df_group, x="ano_mes", y="total", color="orgao_nome")
+        fig.update_xaxes(type='category')
+        st.plotly_chart(fig, use_container_width=True)
+
+    with tab3:
         df_group = df.groupby(["item_despesa", "natureza_despesa"],
                             as_index=False)["valor"].agg({"total": "sum"})
         # Trata valores negativos que impedem a geração do treemap
@@ -102,7 +110,7 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
                                          "natureza_despesa"], values="total")
         st.plotly_chart(fig, use_container_width=True)
 
-    with tab3:
+    with tab4:
         df_grid = df.copy()
         # Remove colunas preenchidas nas filtragens
         for col in filtered:
@@ -110,6 +118,7 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
         st.dataframe(df_grid
                     .sort_values(by=list(df_grid.columns))
                     .set_index("ano_mes"))
+
 
 
 def get_insights(df: pd.DataFrame, filtered: dict, qti: int):
