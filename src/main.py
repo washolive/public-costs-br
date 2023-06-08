@@ -39,8 +39,8 @@ def load_data(year: int) -> pd.DataFrame:
 
     df["ano_mes_referencia"] = df["ano_mes_referencia"].apply(str)
     df = df[["ano_mes_referencia", "orgao_superior_nome",
-            "orgao_nome", "nome_item", "nome_natureza_despesa_detalhada",
-            "valor"]]
+            "orgao_nome", "orgao_sigla", "nome_item",
+            "nome_natureza_despesa_detalhada", "valor"]]
     df.rename({"ano_mes_referencia": "ano_mes",
                "nome_item": "item_despesa",
                "nome_natureza_despesa_detalhada": "natureza_despesa"},
@@ -95,9 +95,9 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
         st.plotly_chart(fig, use_container_width=True)
 
     with tab2:
-        df_group = df.groupby(["ano_mes", "orgao_nome"],
+        df_group = df.groupby(["ano_mes", "orgao_sigla"],
                             as_index=False)["valor"].agg({"total": "sum"})
-        fig = px.bar(df_group, x="ano_mes", y="total", color="orgao_nome")
+        fig = px.bar(df_group, x="ano_mes", y="total", color="orgao_sigla")
         fig.update_xaxes(type='category')
         st.plotly_chart(fig, use_container_width=True)
 
