@@ -74,6 +74,66 @@ def all_filters(df: pd.DataFrame):
     return (df, filtered)
 
 
+def get_insights(df: pd.DataFrame, filtered: dict):
+    """Chama o ChatGPT para obter insights sobre os dados"""
+
+    if filtered:
+        filter_msg = "o dataset está filtrado, contendo somente: "
+        for col, value in filtered.items():
+            filter_msg += f"{col} = '{value}'; "
+    else:
+        filter_msg = "o dataset está completo, sem nenhuma filtragem."
+
+    openai.api_key = st.secrets["openai"]["api_key"]
+    try:
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            temperature=0.,
+            messages=[
+                {"role": "system",
+                "content": "Você é um gestor especializado na área financeira "
+                "que monitora as despesas públicas da administração pública, com "
+                "o objetivo de identificar gastos excessivos e grandes variações "
+                "mensais."
+                },
+                {"role": "user",
+                "content": f"O dataset {df} contém dados do custeio administrativo "
+                "da administração pública federal. O custeio é o conjunto de "
+                "despesas que formam a base para a prestação de serviços públicos e "
+                "compreendem gastos correntes relativos a apoio administrativo, "
+                "energia elétrica, água, telefone, locação de imóveis, etc. "
+                f"Explorando os dados, informe {NUMBER_OF_INSIGHTS} insights sobre "
+                "este dataset."
+                f"Nos insights, considere que {filter_msg}"
+                "Para calcular o gasto total ou as despesas totais de um órgão, de "
+                "um item ou de uma natureza de despesa, some todos os valores dos "
+                "meses do ano. "
+                "Na análise, destaque: "
+                "1. Valores muito discrepantes entre órgãos para itens ou naturezas "
+                "de despesa iguais. "
+                "2. Valores muito diferentes para órgãos com atividades fim "
+                "semelhantes, por exemplo: entre ministérios, entre agências, "
+                "entre fundações, entre universidades. "
+                "4. Variações de valores muito altas nos meses do ano. "
+                "5. Variações mensais de valores muito destoantes de outros órgãos. "
+                "6. Nas comparações de valores, cite os valores nominais e também "
+                "a variação percentual."
+                },
+            ]
+        )
+    except openai.error.RateLimitError as e_msg:
+        st.error(f"OpenAI: {e_msg} https://platform.openai.com/account/usage")
+    except openai.error.AuthenticationError:
+        st.error("OpenAI authentication error!")
+    except openai.error.APIError as e_msg:
+        st.error(f"OpenAI: {e_msg}")
+    else:
+        chat_msg = completion.choices[0].message.content
+        usage = completion.usage.total_tokens
+        st.markdown(chat_msg.replace('$', '\$'))
+        st.caption(f":red[Tokens usados: {usage}]")
+
+
 def create_dashboard(df: pd.DataFrame, filtered: dict):
     """Gera o painel com indicadores e gráficos"""
 
@@ -83,10 +143,11 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
     valor = locale.currency(df["valor"].sum(), grouping=True)
     ind2.metric(label="Soma", value=valor)
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Evolução despesas",
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Evolução despesas",
                           "Evolução órgãos",
                           "Maiores despesas",
-                          "Dados detalhados"])
+                          "Dados detalhados",
+                          "Insights ChatGPT"])
     with tab1:
         df_group = df.groupby(["ano_mes", "item_despesa"],
                             as_index=False)["valor"].agg({"total": "sum"})
@@ -120,55 +181,10 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
                     .sort_values(by=list(df_grid.columns))
                     .set_index("ano_mes"))
 
-
-
-def get_insights(df: pd.DataFrame, filtered: dict, qti: int):
-    """Chama o ChatGPT para obter insights sobre os dados"""
-
-    if filtered:
-        filter_msg = "o dataset está filtrado, contendo somente: "
-        for col, value in filtered.items():
-            filter_msg += f"{col} = '{value}'; "
-    else:
-        filter_msg = "o dataset está completo, sem nenhuma filtragem."
-
-    openai.api_key = st.secrets["openai"]["api_key"]
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        temperature=0.,
-        messages=[
-            {"role": "system",
-            "content": "Você é um gestor especializado na área financeira "
-            "que monitora as despesas públicas da administração pública, com "
-            "o objetivo de identificar gastos excessivos e grandes variações "
-            "mensais."
-            },
-            {"role": "user",
-            "content": f"O dataset {df} contém dados do custeio administrativo "
-            "da administração pública federal. O custeio é o conjunto de "
-            "despesas que formam a base para a prestação de serviços públicos e "
-            "compreendem gastos correntes relativos a apoio administrativo, "
-            "energia elétrica, água, telefone, locação de imóveis, etc. "
-            f"Explorando os dados, informe {qti} insights sobre este dataset."
-            f"Nos insights, considere que {filter_msg}"
-            "Para calcular o gasto total ou as despesas totais de um órgão, de "
-            "um item ou de uma natureza de despesa, some todos os valores dos "
-            "meses do ano. "
-            "Na análise, destaque: "
-            "1. Valores muito discrepantes entre órgãos para itens ou naturezas "
-            "de despesa iguais. "
-            "2. Valores muito diferentes para órgãos com atividades fim "
-            "semelhantes, por exemplo: entre ministérios, entre agências, "
-            "entre fundações, entre universidades. "
-            "4. Variações de valores muito altas nos meses do ano. "
-            "5. Variações mensais de valores muito destoantes de outros órgãos. "
-            "6. Nas comparações de valores, cite os valores nominais e também "
-            "a variação percentual."
-            },
-        ]
-    )
-    chat_msg = completion.choices[0].message.content
-    st.markdown(chat_msg.replace('$', '\$'))
+    with tab5:
+        insights = st.checkbox("Obter insights")
+        if insights:
+            get_insights(df_filtered, filters)
 
 
 ### Main ###
@@ -198,6 +214,3 @@ with st.sidebar:
 
 if load and st.session_state.data_loaded:
     create_dashboard(df_filtered, filters)
-    insights = st.button("Insights do ChatGPT")
-    if insights:
-        get_insights(df_filtered, filters, NUMBER_OF_INSIGHTS)
