@@ -77,6 +77,8 @@ def all_filters(df: pd.DataFrame):
 def get_insights(df: pd.DataFrame, filtered: dict):
     """Chama o ChatGPT para obter insights sobre os dados"""
 
+    NUMBER_OF_INSIGHTS = 6
+
     if filtered:
         filter_msg = "o dataset está filtrado, contendo somente: "
         for col, value in filtered.items():
@@ -84,7 +86,6 @@ def get_insights(df: pd.DataFrame, filtered: dict):
     else:
         filter_msg = "o dataset está completo, sem nenhuma filtragem."
 
-    openai.api_key = st.secrets["openai"]["api_key"]
     try:
         completion = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -182,14 +183,19 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
                     .set_index("ano_mes"))
 
     with tab5:
+        if not st.session_state.api_key:
+            if st.secrets["env"] == "cloud":
+                st.session_state.api_key = st.text_input("Informe sua API key",
+                            type="password")
+            else:
+                st.session_state.api_key = st.secrets["api_key"]
+        openai.api_key = st.session_state.api_key
         insights = st.checkbox("Obter insights")
-        if insights:
+        if insights and st.session_state.api_key:
             get_insights(df_filtered, filters)
 
 
 ### Main ###
-
-NUMBER_OF_INSIGHTS = 6
 
 st.set_page_config(
     page_title="Custeio Insights",
@@ -198,6 +204,8 @@ st.set_page_config(
 )
 if "data_loaded" not in st.session_state:
     st.session_state.data_loaded = False
+if "api_key" not in st.session_state:
+    st.session_state.api_key = ""
 
 st.header("Custeio Insights")
 st.markdown("""Visualização e obtenção de insights sobre os custos
