@@ -43,6 +43,7 @@ docker run -p 8501:8501 costs-br
 
 ### Se preferir Docker Compose
 ```
+docker-compose build
 docker-compose up
 ```
 
