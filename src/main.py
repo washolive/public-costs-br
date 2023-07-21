@@ -8,6 +8,8 @@ energia elétrica, água, telefone, locação de imóveis, entre outros.
 
 import locale
 from urllib.request import urlopen, quote
+from urllib.error import HTTPError, URLError
+from http.client import IncompleteRead
 from zipfile import ZipFile
 from io import BytesIO
 import pandas as pd
@@ -25,15 +27,32 @@ def load_data(year: int) -> pd.DataFrame:
     REPO_URL = "https://repositorio.dados.gov.br/seges/raio-x/"
     FILE_PREFIX = "raiox"
     CSV_FILE = "custeio-administrativo.csv"
+    MONTHS = 12
 
     df_list = []
-    for ref in range(12):
+    for ref in range(MONTHS):
         file_name = f"{FILE_PREFIX}-{year}-{(ref + 1):02d}.zip"
         file_url = REPO_URL + quote(file_name)
-        url = urlopen(file_url)
-        file = ZipFile(BytesIO(url.read()))
-        df_month = pd.read_csv(file.open(CSV_FILE))
-        df_list.append(df_month)
+        try:
+            response = urlopen(file_url, timeout=10)
+            file = ZipFile(BytesIO(response.read()))
+            df_month = pd.read_csv(file.open(CSV_FILE))
+            df_list.append(df_month)
+        except HTTPError as error:
+            if error.status == 404:
+                pass
+            else:
+                st.error(f"Error: {error.status}, {error.reason}")
+                st.stop()
+        except URLError as error:
+            st.error(f"Error: {error.reason}")
+            st.stop()
+        except TimeoutError:
+            st.error("Request timed out")
+            st.stop()
+        except IncompleteRead:
+            st.error("Incomplete file read error")
+            st.stop()
 
     df = pd.concat(df_list, axis=0, ignore_index=True)
 
@@ -144,11 +163,12 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
     valor = locale.currency(df["valor"].sum(), grouping=True)
     ind2.metric(label="Soma", value=valor)
 
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Evolução despesas",
-                          "Evolução órgãos",
-                          "Maiores despesas",
-                          "Dados detalhados",
-                          "Insights ChatGPT"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Evolução despesas",
+         "Evolução órgãos",
+         "Maiores despesas",
+         "Dados detalhados",
+         "Insights ChatGPT"])
     with tab1:
         df_group = df.groupby(["ano_mes", "item_despesa"],
                             as_index=False)["valor"].agg({"total": "sum"})
@@ -197,6 +217,8 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
 
 ### Main ###
 
+YEARS = [2020, 2021, 2022, 2023]
+
 st.set_page_config(
     page_title="Custeio Insights",
     layout="wide",
@@ -213,7 +235,7 @@ st.markdown("""Visualização e obtenção de insights sobre os custos
 
 with st.sidebar:
     st.subheader("Filtros")
-    year_sel = st.selectbox("Ano", [2020, 2021, 2022], index=2)
+    year_sel = st.selectbox("Ano", YEARS, index=len(YEARS)-1)
     load = st.checkbox("Carregar os dados")
     if load:
         df_full = load_data(year_sel)
