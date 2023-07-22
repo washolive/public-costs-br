@@ -34,7 +34,7 @@ def load_data(year: int) -> pd.DataFrame:
         file_name = f"{FILE_PREFIX}-{year}-{(ref + 1):02d}.zip"
         file_url = REPO_URL + quote(file_name)
         try:
-            response = urlopen(file_url, timeout=10)
+            response = urlopen(file_url, timeout=60)
             file = ZipFile(BytesIO(response.read()))
             df_month = pd.read_csv(file.open(CSV_FILE))
             df_list.append(df_month)
