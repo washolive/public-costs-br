@@ -7,11 +7,9 @@ energia elétrica, água, telefone, locação de imóveis, entre outros.
 """
 
 import locale
-from urllib.request import urlopen, quote
-from urllib.error import HTTPError, URLError
-from http.client import IncompleteRead
 from zipfile import ZipFile
 from io import BytesIO
+import requests
 import pandas as pd
 import streamlit as st
 import plotly.express as px
@@ -30,28 +28,31 @@ def load_data(year: int) -> pd.DataFrame:
     MONTHS = 12
 
     df_list = []
+    progress_text = "Carregando"
+    p_bar = st.progress(0, text=progress_text)
     for ref in range(MONTHS):
+        p_bar.progress((ref + 1) / 12,
+                       text=f"{progress_text} {year}/{(ref + 1):02d}")
         file_name = f"{FILE_PREFIX}-{year}-{(ref + 1):02d}.zip"
-        file_url = REPO_URL + quote(file_name)
+        # file_url = REPO_URL + quote(file_name)
+        file_url = f"{REPO_URL}{file_name}"
         try:
-            response = urlopen(file_url, timeout=60)
-            file = ZipFile(BytesIO(response.read()))
-            df_month = pd.read_csv(file.open(CSV_FILE))
-            df_list.append(df_month)
-        except HTTPError as error:
-            if error.status == 404:
-                pass
-            else:
-                st.error(f"Error: {error.status}, {error.reason}")
-                st.stop()
-        except URLError as error:
-            st.error(f"Error: {error.reason}")
+            response = requests.get(file_url, timeout=120)
+            if response.status_code == 200:
+                file = ZipFile(BytesIO(response.content))
+                df_month = pd.read_csv(file.open(CSV_FILE))
+                df_list.append(df_month)
+        except requests.exceptions.HTTPError as error:
+            st.error(f"Error: {error}")
             st.stop()
-        except TimeoutError:
+        except requests.exceptions.ConnectionError:
+            st.error("Connection error")
+            st.stop()
+        except requests.exceptions.Timeout:
             st.error("Request timed out")
             st.stop()
-        except IncompleteRead:
-            st.error("Incomplete file read error")
+        except requests.exceptions.RequestException as error:
+            st.error(f"Error: {error}")
             st.stop()
 
     df = pd.concat(df_list, axis=0, ignore_index=True)
