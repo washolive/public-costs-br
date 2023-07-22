@@ -34,14 +34,18 @@ def load_data(year: int) -> pd.DataFrame:
         p_bar.progress((ref + 1) / 12,
                        text=f"{progress_text} {year}/{(ref + 1):02d}")
         file_name = f"{FILE_PREFIX}-{year}-{(ref + 1):02d}.zip"
-        # file_url = REPO_URL + quote(file_name)
         file_url = f"{REPO_URL}{file_name}"
         try:
-            response = requests.get(file_url, timeout=120)
-            if response.status_code == 200:
-                file = ZipFile(BytesIO(response.content))
-                df_month = pd.read_csv(file.open(CSV_FILE))
-                df_list.append(df_month)
+            with BytesIO() as handle:
+                response = requests.get(file_url, stream=True, timeout=60)
+                if response.ok:
+                    for chunk in response.iter_content(512):
+                        if not chunk:
+                            break
+                        handle.write(chunk)
+                    file = ZipFile(handle)
+                    df_month = pd.read_csv(file.open(CSV_FILE))
+                    df_list.append(df_month)
         except requests.exceptions.HTTPError as error:
             st.error(f"Error: {error}")
             st.stop()
