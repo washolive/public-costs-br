@@ -1,4 +1,6 @@
-# Insights sobre o custeio administrativo BR
+# Insights sobre o custeio administrativo Brasil
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://public-costs-br.streamlit.app/)
 
 Insights sobre os dados de custeio da **Administração Pública Federal brasileira**, usando `Python`, `Streamlit` e `ChatGPT`.
 
