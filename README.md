@@ -1,53 +1,49 @@
-# Insights sobre o custeio administrativo Brasil
+# Brazilian public costs insights
+
+[![pt-br](https://img.shields.io/badge/lang-pt--br-green.svg)](https://github.com/washolive/public-costs-br/blob/main/README.pt-br.md)
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://public-costs-br.streamlit.app/)
 
-Insights sobre os dados de custeio da **Administração Pública Federal brasileira**, usando `Python`, `Streamlit` e `ChatGPT`.
+Artificial Intelligence insights on the administrative costs of **brazilian federal public administration** using `Python`, `Streamlit`, `Plotly` and `ChatGPT`.
 
-Essas despesas constituem a base para a prestação de serviços públicos e compreendem gastos correntes relativos a apoio administrativo, energia elétrica, água, telefone, locação de imóveis, entre outros.
+These expenses form the basis for the provision of public services and include current expenses related to administrative support, electricity, water, telephone, property rental, among others.
 
-Os dados são consultados do [Portal Brasileiro de Dados Abertos](https://dados.gov.br/dados/conjuntos-dados/raio-x-da-administracao-publica-federal).
+The data are consulted from the [Brazilian Open Data Portal](https://dados.gov.br/dados/conjuntos-dados/raio-x-da-administracao-publica-federal) between 2020 and 2023.
 
-## Instalar
+## Install
 
-1. Clonar o repositório
+1. Clone repository
 ```bash
 git clone https://github.com/washolive/public-costs-br.git
 ```
-2. Ir para o diretório onde o repositório foi clonado
+2. Fill the OpenAI API Key
 ```bash
 cd public-costs-br
-```
-3. Preencher a Openai API Key
-```bash
 cp .streamlit/sample_secrets.toml .streamlit/secrets.toml
 ```
-> Abrir o arquivo `.streamlit/secrets.toml` para edição e colocar a sua API Key na string indicada por `<>`.
+> Open file `.streamlit/secrets.toml` to edit and fill your API Key in the string inside `<>`.
 
-## Executar
+## Execute
 
-### Se preferir com o Streamlit
-1. Criar ou usar um Virtual Env
-2. Instalar as packages necessárias
+### Running Streamlit from the command line
+1. Create or use an existing Virtual Env
+2. Install the necessary packages and run
 ```bash
 pip install -r requirements.txt
-```
-3. Executar
-```bash
 streamlit run src/main.py
 ```
 
-### Se preferir container Docker
+### Or using Docker container
 ```
 docker build --rm -t costs-br .
 docker run -p 8501:8501 costs-br
 ```
 
-### Se preferir Docker Compose
+### Or using Docker Compose
 ```
 docker-compose build
 docker-compose up
 ```
 
-## Acessar
+## Open
 http://localhost:8501
