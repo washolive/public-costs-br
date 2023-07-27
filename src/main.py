@@ -7,6 +7,7 @@ energia elétrica, água, telefone, locação de imóveis, entre outros.
 """
 
 import locale
+import time
 from zipfile import ZipFile
 from io import BytesIO
 import requests
@@ -36,16 +37,17 @@ def load_data(year: int) -> pd.DataFrame:
         file_name = f"{FILE_PREFIX}-{year}-{(ref + 1):02d}.zip"
         file_url = f"{REPO_URL}{file_name}"
         try:
-            with BytesIO() as handle:
-                response = requests.get(file_url, stream=True, timeout=60)
-                if response.ok:
-                    for chunk in response.iter_content(512):
-                        if not chunk:
-                            break
-                        handle.write(chunk)
-                    file = ZipFile(handle)
+            retries = 10
+            for retry in range(retries):
+                response = requests.get(file_url, timeout=60)
+                if response.status_code == 200:
+                    file = ZipFile(BytesIO(response.content))
                     df_month = pd.read_csv(file.open(CSV_FILE))
                     df_list.append(df_month)
+                    break
+                elif response.status_code == 404:
+                    break
+                time.sleep(retry + 1)
         except requests.exceptions.HTTPError as error:
             st.error(f"Error: {error}")
             st.stop()
