@@ -144,7 +144,9 @@ def get_insights(df: pd.DataFrame, filtered: dict):
                 "4. Variações de valores muito altas nos meses do ano. "
                 "5. Variações mensais de valores muito destoantes de outros órgãos. "
                 "6. Nas comparações de valores, cite os valores nominais e também "
-                "a variação percentual."
+                "a variação percentual. "
+                "Nas análises, sempre informe os nomes dos órgãos comparados e o mês "
+                "(ou meses) envolvidos."
                 },
             ]
         )
@@ -185,7 +187,7 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
 
     with tab2:
         df_group = df.groupby(["ano_mes", "orgao_sigla"],
-                            as_index=False)["valor"].agg({"total": "sum"})
+                            as_index=False, sort=True)["valor"].agg({"total": "sum"})
         fig = px.bar(df_group, x="ano_mes", y="total", color="orgao_sigla")
         fig.update_xaxes(type='category')
         st.plotly_chart(fig, use_container_width=True)
