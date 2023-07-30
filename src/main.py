@@ -156,6 +156,8 @@ def get_insights(df: pd.DataFrame, filtered: dict):
         st.error("OpenAI authentication error!")
     except openai.error.APIError as e_msg:
         st.error(f"OpenAI: {e_msg}")
+    except openai.error.ServiceUnavailableError:
+        st.error("OpenAI server is overloaded or not ready yet.")
     else:
         chat_msg = completion.choices[0].message.content
         usage = completion.usage.total_tokens
@@ -187,7 +189,7 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
 
     with tab2:
         df_group = df.groupby(["ano_mes", "orgao_sigla"],
-                            as_index=False, sort=True)["valor"].agg({"total": "sum"})
+                            as_index=False)["valor"].agg({"total": "sum"})
         fig = px.bar(df_group, x="ano_mes", y="total", color="orgao_sigla")
         fig.update_xaxes(type='category')
         st.plotly_chart(fig, use_container_width=True)
