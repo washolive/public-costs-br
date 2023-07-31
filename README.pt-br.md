@@ -8,6 +8,10 @@ Insights sobre os dados de custeio da **Administração Pública Federal brasile
 
 Essas despesas constituem a base para a prestação de serviços públicos e compreendem gastos correntes relativos a apoio administrativo, energia elétrica, água, telefone, locação de imóveis, entre outros.
 
+Demonstração:
+
+<img src="public-costs-br-demo.gif"/>
+
 Os dados são consultados do [Portal Brasileiro de Dados Abertos](https://dados.gov.br/dados/conjuntos-dados/raio-x-da-administracao-publica-federal) entre 2020 e 2023.
 
 ## Instalar

@@ -8,6 +8,10 @@ Artificial Intelligence insights on the administrative costs of **brazilian fede
 
 These expenses form the basis for the provision of public services and include current expenses related to administrative support, electricity, water, telephone, property rental, among others.
 
+Demonstration:
+
+<img src="public-costs-br-demo.gif"/>
+
 The data are consulted from the [Brazilian Open Data Portal](https://dados.gov.br/dados/conjuntos-dados/raio-x-da-administracao-publica-federal) between 2020 and 2023.
 
 ## Install
