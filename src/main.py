@@ -15,6 +15,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 import openai
+from openai import OpenAI
 
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -100,7 +101,7 @@ def all_filters(df: pd.DataFrame):
     return (df, filtered)
 
 
-def get_insights(df: pd.DataFrame, filtered: dict):
+def get_insights(df: pd.DataFrame, filtered: dict, client):
     """Chama o ChatGPT para obter insights sobre os dados"""
 
     NUMBER_OF_INSIGHTS = 6
@@ -113,7 +114,7 @@ def get_insights(df: pd.DataFrame, filtered: dict):
         filter_msg = "o dataset está completo, sem nenhuma filtragem."
 
     try:
-        completion = openai.ChatCompletion.create(
+        completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
             temperature=0.,
             messages=[
@@ -150,14 +151,14 @@ def get_insights(df: pd.DataFrame, filtered: dict):
                 },
             ]
         )
-    except openai.error.RateLimitError as e_msg:
-        st.error(f"OpenAI: {e_msg} https://platform.openai.com/account/usage")
-    except openai.error.AuthenticationError:
+    except openai.AuthenticationError:
         st.error("OpenAI authentication error!")
-    except openai.error.APIError as e_msg:
+    except openai.RateLimitError as e_msg:
+        st.error(f"OpenAI: {e_msg} https://platform.openai.com/account/usage")
+    except openai.APIConnectionError as e_msg:
         st.error(f"OpenAI: {e_msg}")
-    except openai.error.ServiceUnavailableError:
-        st.error("OpenAI server is overloaded or not ready yet.")
+    except openai.APIError as e_msg:
+        st.error(f"OpenAI: {e_msg}")
     else:
         chat_msg = completion.choices[0].message.content
         usage = completion.usage.total_tokens
@@ -220,10 +221,11 @@ def create_dashboard(df: pd.DataFrame, filtered: dict):
                             type="password")
             else:
                 st.session_state.api_key = st.secrets["api_key"]
-        openai.api_key = st.session_state.api_key
+        openai_client = OpenAI(api_key=st.session_state.api_key)
+        # openai.api_key = st.session_state.api_key
         insights = st.checkbox("Obter insights")
         if insights and st.session_state.api_key:
-            get_insights(df_filtered, filters)
+            get_insights(df_filtered, filters, openai_client)
 
 
 ### Main ###
